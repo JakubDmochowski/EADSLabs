@@ -41,7 +41,7 @@ class sList {
         Iterator<Key, Value> end() const;
         void pushFront(Key key, Value val);
         void pushBack(Key key, Value val);
-        void pushAfter(Key key, int pos = 1);
+        void pushAfter(Key afterKey, Key elemKey, Value elemVal, int pos = 1);
         void removeFront();
         void removeBack();
         void removeKey(Key key); ///Removes all key occurances
@@ -151,7 +151,8 @@ sList<Key, Value>::~sList() {
 }
 
 template<typename Key, typename Value>
-sList<Key, Value>::sList(const sList<Key, Value>& toCopy) : head(NULL), listSize(0) {
+sList<Key, Value>::sList(const sList<Key, Value>& toCopy) : head(NULL) {
+    listSize = 0;
     makeSentinel();
     for(sList<Key, Value>::Iterator<Key, Value> i = toCopy.begin(); i != toCopy.end(); ++i){
         pushBack(i.ptr->key, i.ptr->value);
@@ -194,7 +195,7 @@ void sList<Key, Value>::pushBack(Key key, Value val) {
     newNode->key = key;
     newNode->value = val;
     if(!listSize++) {
-        newNode->next = tail;
+        newNode->next = head;
         head = newNode;
     } else {
         newNode->next = tail->next;
@@ -205,8 +206,22 @@ void sList<Key, Value>::pushBack(Key key, Value val) {
 
 
 template<typename Key, typename Value>
-void sList<Key, Value>::pushAfter(Key key, int pos) {
-    ///TODODODODO
+void sList<Key, Value>::pushAfter(Key afterKey, Key elemKey, Value elemVal, int pos) {
+    for(sList<Key,Value>::Iterator<Key,Value> i = begin(); i != end(); ++i) {
+        if(i.ptr->key == afterKey && !--pos)  {
+            Node* newNode = new Node();
+            newNode->next = i.ptr->next;
+            newNode->key = elemKey;
+            newNode->value = elemVal;
+            if(i.ptr == tail) {
+                tail = newNode;
+            }
+            i.ptr->next = newNode;
+            ++listSize;
+            return;
+        }
+    }
+    pushBack(elemKey, elemVal);
 }
 
 template<typename Key, typename Value>
@@ -320,12 +335,17 @@ void sList<Key, Value>::clear() {
         el = el->next;
         delete prev;
     } while(el);
+    head = tail = NULL;
     listSize = 0;
     makeSentinel();
 }
 
 template<typename Key, typename Value>
 void sList<Key, Value>::print() const {
+    if(!listSize) {
+        cout << "Empty list\n";
+        return;
+    }
     for(sList<Key, Value>::Iterator<Key, Value> i = begin(); i != end(); ++i) {
         cout << "Key: " << i.ptr->key << " Value: " << i.ptr->value << endl;
     }
@@ -352,10 +372,11 @@ int sList<Key, Value>::size() const {
 
 template<typename Key, typename Value>
 sList<Key, Value>& sList<Key, Value>::operator=(const sList<Key, Value>& toAssign) {
-    if(this == toAssign) return *this;
-    clear();
-    for(sList<Key, Value>::Iterator<Key, Value> i = toAssign.begin(); i != toAssign.end(); ++i){
-        pushBack(i->key, i->value);
+    if(this != &toAssign) {
+        clear();
+        for(sList<Key, Value>::Iterator<Key, Value> i = toAssign.begin(); i != toAssign.end(); ++i){
+            pushBack(i.ptr->key, i.ptr->value);
+        }
     }
     return *this;
 }
@@ -421,6 +442,13 @@ int main()
     one.pushBack(2, 6);
     one.pushBack(2, 5);
     sList<int, int> two(one);
+    cout << "ctor two(one)\n";
+    two.print();
+    cout << "clear two\n";
+    two.clear();
+    cout << "two = one (operator test)\n";
+    two = one;
+    two.print();
     sList<int, int> second;
     second.pushBack(51, 76);
     second.pushBack(34, 12);
@@ -459,6 +487,16 @@ int main()
     cout << "first removeValue\n";
     one.removeValue(5);
     one.print();
+    cout << "remove front\n";
+    one.removeFront();
+    one.print();
+    cout << "remove back\n";
+    one.removeBack();
+    one.print();
+    cout << "remove all with front/back\n";
+    one.removeFront();
+    one.removeBack();
+    one.print();
     cout << "trying:\n";
     int a = 5;
     int b = 43;
@@ -468,5 +506,16 @@ int main()
     for(const auto& i : tri) {
         cout << *i << endl;
     }
+
+    sList<int, int> trd;
+    trd.pushFront(1,3);
+    trd.pushBack(4,6);
+    trd.print();
+    cout << "pushAfter key(1)\n";
+    trd.pushAfter(1,5,9);
+    trd.print();
+    cout << "clear \n";
+    trd.clear();
+    trd.print();
     return 0;
 }
